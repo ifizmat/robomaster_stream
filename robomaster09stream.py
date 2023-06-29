@@ -69,7 +69,11 @@ def _recv_task():
 while True:
   receiving = True
   _recv_task()
-  time.sleep(1);
+  print(f"qsize: {sock_queue.qsize()}")
+  while not sock_queue.empty():
+    print("\n===\n===\n===\n")
+    print(f"\n\n\nget: {sock_queue.get()}")
+  time.sleep(1)
 
 # Clean up resources
 sock.close()
