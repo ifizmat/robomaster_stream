@@ -5,6 +5,7 @@ import time
 import queue
 import logging
 import time
+import libmedia_codec
 
 logger_name = "sdk"
 logger = logging.getLogger(logger_name)
@@ -32,10 +33,10 @@ def _recv_task():
   print("StreamConnection: _recv_task, Start to receiving Data...")
   i = 0
   while receiving:
-    time.sleep(1)
+    time.sleep(0.01)
     i+=1
-    print(f"i = {i}")
-    if i>5:
+    #print(f"i = {i}")
+    if i>32:
       receiving = False
     try:
       if sock is None:
@@ -43,7 +44,7 @@ def _recv_task():
       data, addr = sock.recvfrom(4096)
       if not receiving:
         break
-      print(f"recv_count = {recv_count}")
+      #print(f"recv_count = {recv_count}")
       recv_count = recv_count + 1
       if sock_queue.full():
         logger.warning("StreamConnection: _recv_task, sock_data_queue is full.")
@@ -52,8 +53,8 @@ def _recv_task():
       else:
         logger.debug("StreamConnection: _recv_task, recv {0}, len:{1}, data:{2}".format(
                       recv_count, len(data), data))
-        print("StreamConnection: _recv_task, recv {0}, len:{1}, data:{2}".format(
-               recv_count, len(data), data))
+        #print("StreamConnection: _recv_task, recv {0}, len:{1}, data:{2}".format(
+        #       recv_count, len(data), data))
         sock_queue.put(data)
 
     except socket.timeout:
@@ -66,13 +67,42 @@ def _recv_task():
       receiving = False
       return 
 
+def read_buf(timeout=2):
+  try:
+    buf = sock_queue.get(timeout=timeout)
+    return buf
+  except Exception as e:
+    logger.warning("StreamConnection: read_buf, exception {0}".format(e))
+    return None
+
+
 while True:
   receiving = True
   _recv_task()
-  print(f"qsize: {sock_queue.qsize()}")
+  i = sock_queue.qsize()
+  print(f"qsize: {i}")
+
+  data = b''
   while not sock_queue.empty():
     print("\n===\n===\n===\n")
-    print(f"\n\n\nget: {sock_queue.get()}")
+
+    buf = read_buf()
+    if buf:
+      data += buf
+    #print(f"\n\n\nget {i}: {data}")
+    frames = libmedia_codec.H264Decoder().decode(data)
+    #print(f"\n\n\nframes {i}: {frames}")
+    print(f"frames len(): {len(frames)}")
+    for frame_data in frames:
+      (frame, width, height, ls) = frame_data
+      #print(f"\n\n\nframes {i}: {data}")
+    i -= 1
+  """
+  while not sock_queue.empty():
+    print("\n===\n===\n===\n")
+    print(f"\n\n\nget {i}: {sock_queue.get()}")
+    i -= 1
+  """
   time.sleep(1)
 
 # Clean up resources
