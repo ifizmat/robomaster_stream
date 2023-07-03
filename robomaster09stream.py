@@ -79,8 +79,9 @@ def read_buf(timeout=2):
 while True:
   receiving = True
   _recv_task()
-  i = sock_queue.qsize()
-  print(f"qsize: {i}")
+  size_queue = sock_queue.qsize()
+  index_queue = size_queue
+  print(f"qsize: {size_queue}")
 
   data = b''
   while not sock_queue.empty():
@@ -89,14 +90,21 @@ while True:
     buf = read_buf()
     if buf:
       data += buf
-    #print(f"\n\n\nget {i}: {data}")
+    #print(f"\n\n\nget {index_queue}: {data}")
     frames = libmedia_codec.H264Decoder().decode(data)
-    #print(f"\n\n\nframes {i}: {frames}")
+    #print(f"\n\n\nframes {index_queue}: {frames}")
     print(f"frames len(): {len(frames)}")
     for frame_data in frames:
       (frame, width, height, ls) = frame_data
-      #print(f"\n\n\nframes {i}: {data}")
-    i -= 1
+      if frame:
+        frame = np.fromstring(frame, dtype=np.ubyte, count=len(frame), sep='')
+        for f in frame:
+          print(f, end=' ')
+        print(f"\n\n\nframe {index_queue}: {frame}")
+        print(f"\n\n\nwidth {index_queue}: {width}")
+        print(f"\n\n\nheight {index_queue}: {height}")
+        print(f"\n\n\nline size {index_queue}: {ls}")
+    index_queue -= 1
   """
   while not sock_queue.empty():
     print("\n===\n===\n===\n")
