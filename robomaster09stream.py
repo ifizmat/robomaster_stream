@@ -25,6 +25,7 @@ receiving = True
 recv_count = 0
 sock_queue = queue.Queue(32)
 video_frame_queue = queue.Queue(64)
+frame = None
 
 def _recv_task():
   global recv_count
@@ -120,8 +121,14 @@ while True:
   time.sleep(1)
   size_video_queue = video_frame_queue.qsize()
   print(f"video_frame_queue qsize: {size_video_queue}")
+  if video_frame_queue.qsize() > 1:
+    frame = video_frame_queue.get(timeout=3)
+  if frame is None:
+    break
+  img = np.array(frame)
+  cv2.imshow("frame", img)
 
 # Clean up resources
 sock.close()
-#cv2.destroyAllWindows()
+cv2.destroyAllWindows()
 
