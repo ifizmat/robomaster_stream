@@ -35,11 +35,11 @@ def _recv_task():
   print("StreamConnection: _recv_task, Start to receiving Data...")
   i = 0
   while receiving:
-    time.sleep(0.01)
-    i+=1
+    #time.sleep(0.01)
+    #i+=1
     #print(f"i = {i}")
-    if i>32:
-      receiving = False
+    #if i>32:
+      #receiving = False
     try:
       if sock is None:
         break
@@ -52,11 +52,15 @@ def _recv_task():
         logger.warning("StreamConnection: _recv_task, sock_data_queue is full.")
         print("StreamConnection: _recv_task, sock_data_queue is full.")
         sock_queue.get()
+        ###
+        receiving = False
       else:
         logger.debug("StreamConnection: _recv_task, recv {0}, len:{1}, data:{2}".format(
                       recv_count, len(data), data))
         #print("StreamConnection: _recv_task, recv {0}, len:{1}, data:{2}".format(
         #       recv_count, len(data), data))
+        print("StreamConnection: _recv_task, recv {0}, len:{1}".format(
+               recv_count, len(data)))
         sock_queue.put(data)
 
     except socket.timeout:
@@ -67,6 +71,7 @@ def _recv_task():
       logger.error("StreamConnection: recv, exceptions:{0}".format(e))
       print("StreamConnection: recv, exceptions:{0}".format(e))
       receiving = False
+      print(f'receiving: {receiving}')
       return 
 
 def read_buf(timeout=2):
@@ -112,7 +117,7 @@ while True:
             video_frame_queue.put(frame, timeout=2)
           except Exception as e:
             logger.warning("LiveView: _video_decoder_task, decoder queue is full, e {}.".format(e))
-            print("LiveView: _video_decoder_task, decoder queue is full, e {}.".format(e))
+            #print("LiveView: _video_decoder_task, decoder queue is full, e {}.".format(e))
             continue
 
     
