@@ -78,6 +78,17 @@ def read_buf(timeout=2):
     return None
 
 
+def h264_decode(data):
+  res_frame_list = []
+  frames = libmedia_codec.H264Decoder().decode(data)
+  for frame_data in frames:
+    (frame, width, height, ls) = frame_data
+    if frame:
+      frame = np.fromstring(frame, dtype=np.ubyte, count=len(frame), sep='')
+      frame = (frame.reshape((height, width, 3)))
+      res_frame_list.append(frame)
+      return res_frame_list
+
 while True:
   receiving = True
   _recv_task()
@@ -92,32 +103,29 @@ while True:
     buf = read_buf()
     if buf:
       data += buf
-    #print(f"\n\n\nget {index_queue}: {data}")
-    res_frame_list = []
-    frames = libmedia_codec.H264Decoder().decode(data)
-    #print(f"\n\n\nframes {index_queue}: {frames}")
-    print(f"frames len(): {len(frames)}")
-    for frame_data in frames:
-      (frame, width, height, ls) = frame_data
-      if frame:
-        frame = np.fromstring(frame, dtype=np.ubyte, count=len(frame), sep='')
-        #for f in frame:
-        #  print(f, end=' ')
-        print(f"\n\n\nframe {index_queue}: {frame}")
-        print(f"\n\n\nwidth {index_queue}: {width}")
-        print(f"\n\n\nheight {index_queue}: {height}")
-        print(f"\n\n\nline size {index_queue}: {ls}")
-        frame = (frame.reshape((height, width, 3)))
-        print(f"\n\n\nframe {index_queue}: {frame}")
-        res_frame_list.append(frame)
+      #print(f"\n\n\nget {index_queue}: {data}")
+      frames = h264_decode(data)
+      print(f"\n\n\nh264_decode: {frames}")
+      if frames:
+        for frame in frames:
+          try:
+            video_frame_queue.put(frame, timeout=2)
+          except Exception as e:
+            logger.warning("LiveView: _video_decoder_task, decoder queue is full, e {}.".format(e))
+            print("LiveView: _video_decoder_task, decoder queue is full, e {}.".format(e))
+            continue
+
+    
+    ####
+    
     index_queue -= 1
-    print(f"\n\n\nres_frame_list {index_queue}: {res_frame_list}")
-    for frame in res_frame_list:
-      print(f"\n\n\nres_frame_list {index_queue}: {frame}")
-      video_frame_queue.put(frame, timeout=2)
-      if video_frame_queue.full():
-        video_frame_queue.get()
-        print("StreamConnection: size_video_queue is full.")
+    #print(f"\n\n\nres_frame_list {index_queue}: {res_frame_list}")
+    #for frame in res_frame_list:
+      #print(f"\n\n\nres_frame_list {index_queue}: {frame}")
+      #video_frame_queue.put(frame, timeout=2)
+      #if video_frame_queue.full():
+        #video_frame_queue.get()
+        #print("StreamConnection: size_video_queue is full.")
   time.sleep(1)
   size_video_queue = video_frame_queue.qsize()
   print(f"video_frame_queue qsize: {size_video_queue}")
